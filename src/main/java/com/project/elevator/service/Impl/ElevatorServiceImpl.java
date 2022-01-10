@@ -68,6 +68,8 @@ public class ElevatorServiceImpl implements ElevatorService {
     @Override
     public synchronized void stopElevator(){
         elevator.setCurrentState(State.STOPPED);
+        elevator.setCurrentFloor(0);
+        elevator.setCurrentDirection(Direction.UP);
     }
 
     @Override
@@ -102,7 +104,6 @@ public class ElevatorServiceImpl implements ElevatorService {
     }
 
     private synchronized boolean checkIfJob() {
-
         if (currentJobs.isEmpty()) {
             return false;
         }
@@ -124,10 +125,25 @@ public class ElevatorServiceImpl implements ElevatorService {
                 logger.info("We are crossing floor -- " + i);
                 elevator.setCurrentFloor(i);
             }
+        } else {
+            // The elevator is on the higher floor and called to source floor which is lower floor
+            // So first bring it there.
+            logger.info("Bringing elevator to source floor");
+            for (int i = startFloor; i >= request.getExternalRequest().getSourceFloor(); i--) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                logger.info("We are crossing floor -- " + i);
+                elevator.setCurrentFloor(i);
+            }
         }
+
         // The elevator is now on the floor where the person has requested it i.e. source floor.
         // User can enter and go to the destination floor.
-        logger.info("Reached Source Floor--opening door");
+        logger.info("Reached Source Floor : {} --opening door", request.getExternalRequest().getSourceFloor());
 
         startFloor = elevator.getCurrentFloor();
         for (int i = startFloor; i <= request.getInternalRequest().getDestinationFloor(); i++) {
@@ -149,6 +165,8 @@ public class ElevatorServiceImpl implements ElevatorService {
     private void processDownRequest(Request request) {
 
         int startFloor = elevator.getCurrentFloor();
+        // The elevator is not on the floor where the person has requested it i.e. source floor.
+        // So first bring it there.
         if (startFloor > request.getExternalRequest().getSourceFloor()) {
             for (int i = startFloor; i >= request.getExternalRequest().getSourceFloor(); i--) {
                 try {
@@ -160,9 +178,23 @@ public class ElevatorServiceImpl implements ElevatorService {
                 logger.info("We are crossing floor -- " + i);
                 elevator.setCurrentFloor(i);
             }
+        } else {
+            // The elevator is on the lower floor and called to source floor which is higher floor
+            // So first bring it there.
+            logger.info("Bringing elevator to source floor");
+            for (int i = startFloor; i <= request.getExternalRequest().getSourceFloor(); i++) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                logger.info("We are crossing floor -- " + i);
+                elevator.setCurrentFloor(i);
+            }
         }
 
-        logger.info("Reached Source Floor--opening door");
+        logger.info("Reached Source Floor : {} --opening door", request.getExternalRequest().getSourceFloor());
 
         startFloor = elevator.getCurrentFloor();
 
@@ -182,7 +214,7 @@ public class ElevatorServiceImpl implements ElevatorService {
         logger.info("We have reached destination floor -- " + request.getInternalRequest().getDestinationFloor());
     }
 
-    private synchronized boolean checkIfNewJobCanBeProcessed(Request currentRequest) {
+    private boolean checkIfNewJobCanBeProcessed(Request currentRequest) {
         if (checkIfJob()) {
             if (elevator.getCurrentDirection() == Direction.UP) {
                 Request request = currentJobs.pollFirst();
@@ -206,7 +238,6 @@ public class ElevatorServiceImpl implements ElevatorService {
                 currentJobs.add(request);
 
             }
-
         }
         return false;
 
@@ -222,7 +253,7 @@ public class ElevatorServiceImpl implements ElevatorService {
 
     }
 
-    private synchronized void addPendingUpJobsToCurrentJobs() {
+    private  void addPendingUpJobsToCurrentJobs() {
         if (!upPendingJobs.isEmpty()) {
             currentJobs = upPendingJobs;
             elevator.setCurrentDirection(Direction.UP);
@@ -240,7 +271,6 @@ public class ElevatorServiceImpl implements ElevatorService {
             elevator.setCurrentDirection(request.getExternalRequest().getDirectionToGo());
             currentJobs.add(request);
         } else if (elevator.getCurrentState() == State.MOVING) {
-
             if (request.getExternalRequest().getDirectionToGo() != elevator.getCurrentDirection()) {
                 addtoPendingJobs(request);
             } else if (request.getExternalRequest().getDirectionToGo() == elevator.getCurrentDirection()) {
