@@ -1,7 +1,11 @@
 package com.project.elevator.model;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+
 import java.util.TreeSet;
 
+@Component
 public class Elevator {
 //    public static Elevator elevator;
 
