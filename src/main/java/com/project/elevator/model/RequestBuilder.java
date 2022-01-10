@@ -13,8 +13,8 @@ public class RequestBuilder {
         return this;
     }
 
-    public RequestBuilder buildExternalRequest(int srcFloor, int direction){
-        request.setExternalRequest(new ExternalRequest(srcFloor, Direction.UP));
+    public RequestBuilder buildExternalRequest(int srcFloor, Direction direction){
+        request.setExternalRequest(new ExternalRequest(srcFloor, direction));
         return this;
     }
 

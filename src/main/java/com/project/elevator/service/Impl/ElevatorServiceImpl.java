@@ -22,7 +22,7 @@ public class ElevatorServiceImpl implements ElevatorService {
     Logger logger =  LoggerFactory.getLogger(ElevatorServiceImpl.class);
 
     @Override
-    public void callTheElevator(int direction, int sourceFloor) {
+    public void callTheElevator(Direction direction, int sourceFloor) {
         logger.info("Calling Elevator Service to {}, wants to move in direction {}", sourceFloor, direction);
         RequestBuilder requestBuilder = new RequestBuilder();
         Request request = requestBuilder.buildExternalRequest(sourceFloor, direction).getRequest();
@@ -42,7 +42,7 @@ public class ElevatorServiceImpl implements ElevatorService {
     }
 
     @Override
-    public void callAndMoveElevatorToFloor(int directionToMove, int srcFloor, int destinationFloor) {
+    public void callAndMoveElevatorToFloor(Direction directionToMove, int srcFloor, int destinationFloor) {
         logger.info("Calling Elevator Service to {}, wants to move in direction {} and to floor {} ",
                 srcFloor, directionToMove, destinationFloor);
         RequestBuilder requestBuilder = new RequestBuilder();
@@ -57,6 +57,14 @@ public class ElevatorServiceImpl implements ElevatorService {
     public String getElevatorStatus(){
         return elevator.toString();
     }
+
+    @Override
+    public boolean checkElevatorIsWorking(){
+        if(elevator.getCurrentState() == State.IDLE || elevator.getCurrentState() == State.MOVING)
+            return true;
+        else return false;
+    }
+
     @Override
     public synchronized void stopElevator(){
         elevator.setCurrentState(State.STOPPED);
@@ -93,7 +101,7 @@ public class ElevatorServiceImpl implements ElevatorService {
         }
     }
 
-    private boolean checkIfJob() {
+    private synchronized boolean checkIfJob() {
 
         if (currentJobs.isEmpty()) {
             return false;
@@ -113,7 +121,7 @@ public class ElevatorServiceImpl implements ElevatorService {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                System.out.println("We have reached floor -- " + i);
+                logger.info("We are crossing floor -- " + i);
                 elevator.setCurrentFloor(i);
             }
         }
@@ -129,32 +137,32 @@ public class ElevatorServiceImpl implements ElevatorService {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            logger.info("We have reached floor -- " + i);
+            logger.info("We are crossing floor -- " + i);
             elevator.setCurrentFloor(i);
             if (checkIfNewJobCanBeProcessed(request)) {
-                break;
+                return;
             }
         }
-
+        logger.info("We have reached destination floor -- " + request.getInternalRequest().getDestinationFloor());
     }
 
     private void processDownRequest(Request request) {
 
         int startFloor = elevator.getCurrentFloor();
-        if (startFloor < request.getExternalRequest().getSourceFloor()) {
-            for (int i = startFloor; i <= request.getExternalRequest().getSourceFloor(); i++) {
+        if (startFloor > request.getExternalRequest().getSourceFloor()) {
+            for (int i = startFloor; i >= request.getExternalRequest().getSourceFloor(); i--) {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
-                System.out.println("We have reached floor -- " + i);
+                logger.info("We are crossing floor -- " + i);
                 elevator.setCurrentFloor(i);
             }
         }
 
-        System.out.println("Reached Source Floor--opening door");
+        logger.info("Reached Source Floor--opening door");
 
         startFloor = elevator.getCurrentFloor();
 
@@ -165,16 +173,16 @@ public class ElevatorServiceImpl implements ElevatorService {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-            System.out.println("We have reached floor -- " + i);
+            logger.info("We are crossing floor -- " + i);
             elevator.setCurrentFloor(i);
             if (checkIfNewJobCanBeProcessed(request)) {
-                break;
+                return;
             }
         }
-
+        logger.info("We have reached destination floor -- " + request.getInternalRequest().getDestinationFloor());
     }
 
-    private boolean checkIfNewJobCanBeProcessed(Request currentRequest) {
+    private synchronized boolean checkIfNewJobCanBeProcessed(Request currentRequest) {
         if (checkIfJob()) {
             if (elevator.getCurrentDirection() == Direction.UP) {
                 Request request = currentJobs.pollFirst();
@@ -204,7 +212,7 @@ public class ElevatorServiceImpl implements ElevatorService {
 
     }
 
-    private synchronized void addPendingDownJobsToCurrentJobs() {
+    private void addPendingDownJobsToCurrentJobs() {
         if (!downPendingJobs.isEmpty()) {
             currentJobs = downPendingJobs;
             elevator.setCurrentDirection(Direction.DOWN);

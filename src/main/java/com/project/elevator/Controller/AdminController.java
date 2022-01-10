@@ -48,8 +48,12 @@ public class AdminController {
     @GetMapping("/startElevatorService/{userId}")
     public void startElevatorService(@PathVariable("userId") int userId) {
         if (adminRepository.findById(userId).isPresent()) {
-            elevatorService.startElevator();
-            logger.info("Admin with userId : {} is started the elevator", userId);
+            if(elevatorService.checkElevatorIsWorking()){
+                logger.info("Elevator is already working.");
+            }else {
+                logger.info("Admin with userId : {} has started the elevator", userId);
+                elevatorService.startElevator();
+            }
         } else logger.info("Admin with userId : {} is not authorised to start the elevator", userId);
 
     }
@@ -63,4 +67,5 @@ public class AdminController {
         } else logger.info("Admin with userId : {} is not authorised to start the elevator", userId);
         return ("Admin with userId : " + userId + " is not authorised to start the elevator");
     }
+
 }
