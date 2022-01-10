@@ -1,7 +1,6 @@
 package com.project.elevator.Controller;
 
 import com.project.elevator.model.Direction;
-import com.project.elevator.model.Request;
 import com.project.elevator.service.Impl.ElevatorServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class ElevatorController {
+    private static int MAXIMUMALLOWEDELEVATORFLOOR = 10;
     @Autowired
     ElevatorServiceImpl elevatorService;
     Logger logger = LoggerFactory.getLogger(ElevatorController.class);
@@ -21,9 +21,10 @@ public class ElevatorController {
                                              @PathVariable("srcFloor") int srcFloor,
                                              @PathVariable("desFloor") int desFloor) {
         logger.info("Request to elevator is not valid");
-        if(!validateInput(direction,srcFloor,desFloor)){
+        if (!validateInput(direction, srcFloor, desFloor)) {
             return String.format("Request to elevator is not valid, user want to move %s from source floor : %d to " +
-                    "destination floor %d which is impossible!", direction, srcFloor, desFloor);
+                    "destination floor %d which is impossible!, Maximum Allowed Floor %d",
+                    direction, srcFloor, desFloor, MAXIMUMALLOWEDELEVATORFLOOR);
         } else {
             elevatorService.callAndMoveElevatorToFloor(direction, srcFloor, desFloor);
             return "Request is successfully added to the queue";
@@ -40,10 +41,12 @@ public class ElevatorController {
 //        elevatorService.moveToFloor(destinationFloor);
 //    }
 
-    private boolean validateInput(Direction directionToGo, int srcFloor, int desFloor){
-        if(directionToGo == Direction.UP && srcFloor > desFloor)
+    private boolean validateInput(Direction directionToGo, int srcFloor, int desFloor) {
+        if (directionToGo == Direction.UP && srcFloor > desFloor)
             return false;
-        else if(directionToGo == Direction.DOWN && srcFloor < desFloor)
+        else if (directionToGo == Direction.DOWN && srcFloor < desFloor)
+            return false;
+        else if (srcFloor < 0 || desFloor > MAXIMUMALLOWEDELEVATORFLOOR)
             return false;
         return true;
     }
