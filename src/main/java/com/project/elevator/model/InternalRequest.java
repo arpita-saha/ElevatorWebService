@@ -1,6 +1,6 @@
 package com.project.elevator.model;
 
-public class InternalRequest implements Request{
+public class InternalRequest{
     private int destinationFloor;
 
     public InternalRequest(int destinationFloor) {
@@ -13,16 +13,6 @@ public class InternalRequest implements Request{
 
     public void setDestinationFloor(int destinationFloor) {
         this.destinationFloor = destinationFloor;
-    }
-
-    @Override
-    public int compareTo(Request internalRequest) {
-        if (this.getDestinationFloor() == ((InternalRequest) internalRequest).getDestinationFloor())
-            return 0;
-        else if (this.getDestinationFloor() > ((InternalRequest) internalRequest).getDestinationFloor())
-            return 1;
-        else
-            return -1;
     }
 
 }
